@@ -81,11 +81,22 @@ Episodes go through two stages so you don't burn time transcribing junk:
 
 Stage 2 needs `brew install ffmpeg`. The first run downloads the Parakeet model (~2.5 GB).
 
+## Mac app
+
+```bash
+bash mac/build_app.sh       # builds ~/Applications/Reading Triage.app
+```
+
+Open **Reading Triage** from Spotlight or Launchpad, or drag it to the Dock. It starts Ollama if needed,
+runs the UI in a native window, and stops it when you close the window. **Fetch & score now** in the
+sidebar runs the pipeline without a terminal. The app points at this folder's `.venv`, so rebuild it if
+you move the folder.
+
 ## Daily use
 
 ```bash
 python run.py               # ingest + score (first run pulls the last 7 days)
-streamlit run app.py        # triage at http://localhost:8501
+streamlit run app.py        # same UI in a browser at http://localhost:8501
 ```
 
 Triage, then do your deep reads. Fill in the Obsidian note's Claim / Mechanism / So what / Open
@@ -129,6 +140,7 @@ costing you triage time for nothing. Remove it from config.yaml (or unsubscribe)
 ```
 run.py                 ingest + score entry point
 app.py                 Streamlit triage UI
+mac/                   native window (desktop.py), app icon, .app builder
 pipeline/config.py     loads config.yaml
 pipeline/db.py         SQLite schema + queries (incl. source stats)
 pipeline/ingest_*.py   rss, youtube, gmail
