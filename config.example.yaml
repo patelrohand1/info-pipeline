@@ -1,0 +1,64 @@
+# Copy to config.yaml and edit. This file is the only thing you should need to touch day to day.
+
+# The filter. Every item is scored against these. Rewrite them each quarter.
+questions:
+  - "How does the economy work: what underpins Fed and fiscal policy, and how do they transmit through the ON RRP, bank reserves and the yield curve?"
+  - "What is a well-argued, opinionated take on how a current news story or policy change could move markets from here, and through which assets or channel?"
+  - "What do the latest economic data releases (jobs, GDP, inflation prints and surveys) show, what is driving inflation (goods, shelter, core services ex-housing, wages), and how are they shifting the market-implied Fed path?"
+  - "What news is shifting the commodity markets (oil and refining, natural gas, industrial metals and manufacturing demand, and gold and silver as hedges against the dollar and debasement), and how does that pass through to inflation and other markets?"
+  - "How is the market positioned for the coming days and weeks, and how are insiders and other participants showing their hands (positioning and flow data, CTA/trend-follower and systematic flows, options activity, volatility and credit-protection (CDS) hedging, insider buying and selling, and fund and dealer exposure)?"
+  - "How does a trading desk make money in a given product (flow versus risk-taking, bid-ask, inventory and financing costs), and what do traders and salespeople watch day to day?"
+
+# Broad question that loses ties to the others when scores are equal (1-based). Remove to disable.
+catch_all_question: 2
+catch_all_penalty: 2        # points off that question's score, so it needs a raw 8 to reach the bar of 6
+
+# Substack, blogs, arXiv, any RSS/Atom feed.
+rss_feeds:
+  - name: "Example Substack"
+    url: "https://example.substack.com/feed"
+  - name: "arXiv q-fin (general finance)"
+    url: "https://rss.arxiv.org/rss/q-fin.GN"
+
+# YouTube: use channel IDs (start with UC...). Resolve a handle with:
+#   python -m pipeline.tools channel @handle
+youtube_channels:
+  - name: "Example Channel"
+    channel_id: "UCxxxxxxxxxxxxxxxxxxxxxx"
+
+podcasts:
+  transcribe: true                  # stage 2: local Parakeet transcription on promising episodes
+  transcribe_min_score: 6           # only transcribe if the show notes score at least this
+  max_transcriptions_per_run: 3     # each 1-hr episode takes a few minutes on an M-series Mac
+  parakeet_model: "mlx-community/parakeet-tdt-0.6b-v3"   # NVIDIA Parakeet, MLX build
+  # Fill with: python -m pipeline.tools podcasts-import   (or `podcast <apple link>` per show)
+  shows:
+    - name: "Example Show"
+      feed_url: "https://example.com/podcast.xml"
+
+gmail:
+  enabled: false            # flip on after you add credentials.json (see README)
+  lookback_days: 3
+  # Pick ONE way to find newsletters (checked in this order):
+  # 1) query: any Gmail search string, e.g. 'label:Meco-xyz OR label:Newsletters'
+  # query: ""
+  # 2) senders: works no matter how Meco labels/archives things. Recommended with Meco.
+  senders:
+    - "example@substack.com"
+    - "newsletter@example.com"
+  # 3) label: fallback if neither of the above is set
+  label: "Newsletters"
+
+model:
+  name: "qwen2.5:7b"        # any model you've pulled with `ollama pull`
+  host: "http://localhost:11434"
+  max_chars: 8000           # text sent to the model per item
+
+triage:
+  min_score_default: 6      # digest hides items below this
+  deep_read_cap: 4          # app warns past this many Deep verdicts per day
+
+paths:
+  db: "data/pipeline.db"
+  obsidian_vault_notes: "~/Documents/Obsidian/Vault/Inbox"   # where Deep-read notes land
+  anki_export_dir: "data/anki"
