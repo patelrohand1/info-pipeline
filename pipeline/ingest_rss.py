@@ -9,7 +9,7 @@ import feedparser
 import requests
 
 from . import db
-from .text_utils import UA, fetch_url_text, html_to_text
+from .text_utils import fetch_url_text, html_to_text
 
 MIN_FULLTEXT_CHARS = 800  # below this, the feed probably only has an excerpt
 
@@ -34,11 +34,7 @@ def _entries(feed: dict) -> list[dict]:
                             published=dt.isoformat(timespec="seconds"), ts=dt.timestamp(),
                             html=post["content"]["rendered"]))
         return out
-    # Fetch ourselves with a browser user agent: Substack serves a bot check to feedparser's default one
-    # from cloud IPs (GitHub Actions).
-    resp = requests.get(feed["url"], headers=UA, timeout=30)
-    resp.raise_for_status()
-    parsed = feedparser.parse(resp.content)
+    parsed = feedparser.parse(feed["url"])
     if parsed.bozo and not parsed.entries:
         raise ValueError(f"failed to parse ({parsed.bozo_exception})")
     out = []
