@@ -27,11 +27,13 @@ QUESTIONS = cfg["questions"]
 
 
 @st.cache_resource
-def get_conn():
+def get_conn(turso_url: str | None):
+    # Keyed on the URL so a connection opened before secrets loaded isn't reused.
     return db.connect(cfg["paths"]["db"])
 
 
-conn = get_conn()
+TURSO_URL = os.environ.get("TURSO_DATABASE_URL")
+conn = get_conn(TURSO_URL)
 CAP = cfg.get("triage", {}).get("deep_read_cap", 4)
 PID_FILE = ROOT / "data" / "run.pid"
 RUN_LOG = ROOT / "logs" / "run.log"
@@ -125,6 +127,8 @@ with st.sidebar:
     st.markdown('<div class="side-h">Pipeline</div>', unsafe_allow_html=True)
     last = conn.execute("SELECT MAX(fetched_at) FROM items").fetchone()[0]
     running = False if IS_CLOUD else pipeline_running()
+    if IS_CLOUD and not TURSO_URL:
+        st.error("TURSO_DATABASE_URL isn't set, so this is an empty local database. Add it under App settings → Secrets.")
     if IS_CLOUD:
         st.caption(f"Fetches at 6am and 6pm automatically. Last new item: {(last or 'never')[:16].replace('T', ' ')} UTC")
         st.link_button("Run now on GitHub", f"https://github.com/{cfg.get('github_repo', 'patelrohand1/info-pipeline')}/actions/workflows/pipeline.yml", width="stretch")
