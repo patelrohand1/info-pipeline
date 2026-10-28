@@ -1,0 +1,28 @@
+# Fetch + score twice a day into the Turso database the UI reads. Secrets: Settings > Secrets and variables > Actions.
+name: pipeline
+
+on:
+  schedule:
+    - cron: "0 10,22 * * *"   # 6am / 6pm US Eastern (EDT); an hour earlier in winter. GitHub may start runs late.
+  workflow_dispatch:           # "Run workflow" button, also linked from the app sidebar
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python run.py
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}

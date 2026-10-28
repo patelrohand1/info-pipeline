@@ -52,7 +52,7 @@ gmail:
 model:
   provider: "gemini"          # "gemini" (API; also does podcast transcription) or "ollama" (local qwen + Parakeet, $0)
   name: "gemini-flash-lite-latest"   # alias for Google's newest Flash-Lite; "gemini-flash-latest" is stronger but has a smaller free quota
-  api_key: ""                 # paste your key here (config.yaml is gitignored), or set GEMINI_API_KEY instead
+  # API key: GEMINI_API_KEY in .streamlit/secrets.toml (local) or the cloud secret stores. Never put it here.
   requests_per_minute: 8      # stay under the free tier's per-minute cap
   # max_chars: text sent per item. Defaults to 60000 for gemini, 8000 for ollama.
   # For ollama, set name: "qwen2.5:7b" and host: "http://localhost:11434".

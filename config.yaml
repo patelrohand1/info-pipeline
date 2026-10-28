@@ -1,0 +1,148 @@
+# Built from docs/source-audit.md (2026-10-27). Feed URLs verified live that day.
+# "trial" = review in the Sources tab on/after 2026-11-26; drop anything that hasn't earned a Deep read.
+
+# The filter. Every item is scored against these. Rewrite them each quarter.
+questions:
+  - "How does the economy work: what underpins Fed and fiscal policy, and how do they transmit through the ON RRP, bank reserves and the yield curve?"
+  - "What is a well-argued, opinionated take on how a current news story or policy change could move markets from here, and through which assets or channel?"
+  - "What do the latest economic data releases (jobs, GDP, inflation prints and surveys) show, what is driving inflation (goods, shelter, core services ex-housing, wages), and how are they shifting the market-implied Fed path?"
+  - "What news is shifting the commodity markets (oil and refining, natural gas, industrial metals and manufacturing demand, and gold and silver as hedges against the dollar and debasement), and how does that pass through to inflation and other markets?"
+  - "How is the market positioned for the coming days and weeks, and how are insiders and other participants showing their hands (positioning and flow data, CTA/trend-follower and systematic flows, options activity, volatility and credit-protection (CDS) hedging, insider buying and selling, and fund and dealer exposure)?"
+  - "How does a trading desk make money in a given product (flow versus risk-taking, bid-ask, inventory and financing costs), and what do traders and salespeople watch day to day?"
+
+# Broad question that loses ties to the others when scores are equal (1-based). Remove to disable.
+catch_all_question: 2
+catch_all_penalty: 2        # points off that question's score, so it needs a raw 8 to reach the bar of 6
+
+# Substack, blogs, any RSS/Atom feed.
+rss_feeds:
+  # --- Keep: Substack / blogs
+  - name: "Conks"
+    url: "https://www.conks.plumbing/feed"
+  - name: "The Macro Compass"
+    url: "https://themacrocompass.substack.com/feed"
+  - name: "The MacroTourist"
+    url: "https://posts.themacrotourist.com/feed"
+  - name: "Musings on Markets (Damodaran)"
+    url: "https://aswathdamodaran.blogspot.com/feeds/posts/default"
+  - name: "The Overshoot"
+    url: "https://theovershoot.co/feed"   # www. host points at a dead parking IP; bare domain is Substack
+  - name: "Yes, I give a fig (Michael Green)"
+    url: "https://www.yesigiveafig.com/feed"
+  - name: "JunkBondInvestor"
+    url: "https://www.junkbondinvestor.com/feed"
+  - name: "Economist: Off the Charts"
+    url: "https://offthecharts.substack.com/feed"
+  - name: "RECONS Review"
+    url: "https://rutgersecon.substack.com/feed"
+  - name: "Commodity Context"
+    url: "https://www.commoditycontext.com/feed"
+  - name: "EPB Research"
+    url: "https://blog.epbresearch.com/feed"
+  # Michael Pettis: no Substack publication found (substack.com/@michaelpettis is a profile only). Add when located.
+
+  # --- Keep: email-only newsletters that turned out to have RSS
+  - name: "Torsten Slok (Apollo Daily Spark)"
+    url: "https://www.apolloacademy.com/category/the-daily-spark/feed/"   # /the-daily-spark/feed/ is a one-item stub
+  - name: "Yardeni QuickTakes"
+    url: "https://www.yardeniquicktakes.com/rss/"
+  - name: "Lyn Alden"
+    url: "https://www.lynalden.com/feed/"
+  - name: "ING THINK"
+    url: "https://think.ing.com/rss"
+
+  # --- Trial
+  - name: "Kaoboy Musings (UrbanKaoboy)"
+    url: "https://www.urbankaoboy.com/feed"
+  - name: "Doomberg"
+    url: "https://newsletter.doomberg.com/feed"
+  - name: "Jack Farley (Farley Associated Research)"
+    url: "https://farleyassociatedresearch.substack.com/feed"   # mostly paid; keep only if free posts score
+  - name: "Ramp Economics Lab"
+    url: "https://econlab.substack.com/feed"
+  - name: "Jared Bernstein"
+    url: "https://jaredbernstein.substack.com/feed"   # last post Jan 2023; likely dead, drop at review
+  - name: "Cassandra Unchained (Burry)"
+    url: "https://michaeljburry.substack.com/feed"
+  - name: "BIS Bulletin"
+    url: "https://www.bis.org/doclist/bisbulletins.rss"
+  - name: "Everybody's Wrong (JC Parets)"   # added 2026-10-27, not in the audit; daily. TrendLabs disabled RSS, so this is the WordPress API (category 23)
+    url: "https://trendlabs.com/wp-json/wp/v2/posts?categories=23&per_page=20&_fields=link,date_gmt,title,content"
+
+# YouTube: channel IDs (UC...). Resolve a handle with: python -m pipeline.tools channel @handle
+youtube_channels:
+  # --- Keep
+  - name: "Steve Eisman (Real Eisman Playbook)"
+    channel_id: "UCzQ2FFVe7m8yIgzXMZtlSjg"   # @RealEismanPlaybook (not @SteveEisman, which is someone else)
+  - name: "Patrick Boyle"
+    channel_id: "UCASM0cgfkJxQ1ICmRilfHLw"
+  # --- Trial (Waqar Asim moved to podcasts: @WaqarAsim's last upload is from 2022)
+  - name: "Dimitri Bianco"
+    channel_id: "UCLHvJ1KNGE1s-A3ODiSgplw"
+  - name: "RenMac"   # added 2026-10-27, not in the audit; @renmacllc (mostly Shorts, which are skipped)
+    channel_id: "UCRJplQ4Ynuph20iIzFP5tww"
+
+podcasts:
+  transcribe: true                  # stage 2: local Parakeet transcription on promising episodes
+  transcribe_min_score: 6           # only transcribe if the show notes score at least this
+  max_transcriptions_per_run: 3     # each 1-hr episode takes a few minutes on an M-series Mac
+  parakeet_model: "mlx-community/parakeet-tdt-0.6b-v3"   # only used when model.provider is ollama
+  shows:
+    # --- Keep
+    - name: "Odd Lots"
+      feed_url: "https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/8a94442e-5a74-4fa2-8b8d-ae27003a8d6b/982f5071-765c-403d-969d-ae27003a8d83/podcast.rss"
+    - name: "Macro Musings"
+      feed_url: "https://rss.libsyn.com/shows/138806/destinations/865793.xml"
+    - name: "Market Maker (AmplifyME)"
+      feed_url: "https://anchor.fm/s/1058df0d0/podcast/rss"
+    - name: "The Wall Street Skinny"
+      feed_url: "https://feeds.megaphone.fm/TTNSE2412391117"
+    - name: "Goldman Sachs Exchanges"
+      feed_url: "https://feeds.megaphone.fm/GLD9218176758"
+    - name: "J.P. Morgan Eye on the Market"
+      feed_url: "https://feed.podbean.com/eyeonthemarket/feed.xml"
+    - name: "The Blackstone Podcast (Inside Blackstone)"
+      feed_url: "https://feed.podbean.com/insideblackstone/feed.xml"   # old /blackstone/ feed now 404s
+    - name: "Business Breakdowns"
+      feed_url: "https://feeds.megaphone.fm/breakdowns"
+    # --- Trial
+    - name: "Top Traders Unplugged"
+      feed_url: "https://feeds.captivate.fm/top-traders-unplugged/"
+    - name: "Wall Street Oasis"
+      feed_url: "https://feeds.megaphone.fm/IBOC6784645588"
+    - name: "FT News Briefing"   # fills the news slot (chosen over FT Editor's Digest: no Gmail needed)
+      feed_url: "https://feeds.acast.com/public/shows/73fe3ede-5c5c-4850-96a8-30db8dbae8bf"
+    - name: "Invest Like the Best"
+      feed_url: "https://feeds.megaphone.fm/CLS2859450455"
+    - name: "Waqar Asim (Titans Of Tomorrow)"   # audit lists him under YouTube; the live show is this podcast
+      feed_url: "https://anchor.fm/s/10662aa3c/podcast/rss"
+    - name: "Bloomberg Surveillance"   # added 2026-10-27, not in the audit; daily
+      feed_url: "https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/8e704079-ca57-4eac-9741-ae27003e2b7f/9739700c-72c3-4176-ae55-ae27003e2b96/podcast.rss"
+    - name: "Street Signals (State Street)"
+      feed_url: "https://www.omnycontent.com/d/playlist/79357ab6-d990-4ff8-932e-afe200d9783f/6b0a740d-00d1-4d34-9316-b01c0094c2d8/b6f9e312-a3c3-49c9-8692-b01c00c951b4/podcast.rss"
+
+# Still email-only (no working RSS found): Money Stuff, RenMac Recap, Brad Setser, Howard Marks/Oaktree,
+# KKR Insights, Brookfield Insights, Points of Return (John Authers, Bloomberg; added 2026-10-27). Turn this on once Meco forwards to a Gmail and credentials.json exists,
+# then fill senders from real From: lines (python -m pipeline.tools gmail-labels helps find them).
+gmail:
+  enabled: false
+  lookback_days: 3
+  senders: []
+  label: "Newsletters"
+
+model:
+  provider: "gemini"          # "gemini" (API; also does podcast transcription) or "ollama" (local qwen + Parakeet, $0)
+  name: "gemini-flash-lite-latest"   # alias for Google's newest Flash-Lite; "gemini-flash-latest" is stronger but has a smaller free quota
+  # API key: GEMINI_API_KEY in .streamlit/secrets.toml (local) or the cloud secret stores. Never put it here.
+  requests_per_minute: 8      # stay under the free tier's per-minute cap
+  # max_chars: text sent per item. Defaults to 60000 for gemini, 8000 for ollama.
+  # For ollama, set name: "qwen2.5:7b" and host: "http://localhost:11434".
+
+triage:
+  min_score_default: 6
+  deep_read_cap: 4
+
+paths:
+  db: "data/pipeline.db"
+  obsidian_vault_notes: "~/Documents/Obsidian/Vault/Inbox"
+  anki_export_dir: "data/anki"

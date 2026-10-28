@@ -8,9 +8,10 @@ Deep reads become Obsidian notes; flagged concepts become an Anki deck. Goal: re
 - Scoring and podcast transcription use the Gemini API (`model.provider: gemini`, free credits / free tier).
   No other paid APIs. Keep the local path working as the $0 fallback: `provider: ollama` = `qwen2.5:7b` +
   `parakeet-mlx` (Parakeet TDT 0.6B v3) + `ffmpeg`.
-- Gemini key lives in `config.yaml` (`model.api_key`) or `GEMINI_API_KEY`. Never commit it.
 - macOS on Apple Silicon. Python venv at `.venv`.
-- Never commit `config.yaml`, `credentials.json`, `token.json`, or `data/` (already in .gitignore).
+- `config.yaml` is committed (sources + questions, no secrets). Never commit `.streamlit/secrets.toml`,
+  `credentials.json`, `token.json`, or `data/` (all in .gitignore). Secrets are env vars only:
+  `GEMINI_API_KEY`, `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` (local: `.streamlit/secrets.toml`).
 - Keep modules small and isolated per source; one source failing must never crash a run.
 
 ## Commands
@@ -20,12 +21,16 @@ Deep reads become Obsidian notes; flagged concepts become an Anki deck. Goal: re
 - UI: `streamlit run app.py`, or the Mac app: `bash mac/build_app.sh` builds `~/Applications/Reading Triage.app`
   (pywebview window around Streamlit; rebuild after moving the folder)
 - Helpers: `python -m pipeline.tools channel @handle | podcast <apple link> | podcasts-import | gmail-labels | add <url>`
-- Schedule: `scheduling/com.rohan.infopipeline.plist` (launchd, 6am + 6pm)
+- Schedule: `.github/workflows/pipeline.yml` (GitHub Actions, 6am + 6pm ET, writes to Turso).
+  Local alternative: `scheduling/com.rohan.infopipeline.plist` (launchd)
+- Cloud UI: Streamlit Community Cloud, `app.py`, Python 3.12, secrets pasted from `.streamlit/secrets.toml`.
+  `IS_CLOUD` (config.py) hides local-only bits; Obsidian notes for cloud Deep reads are written when the Mac app opens.
+- One-time: `python -m pipeline.tools migrate-to-turso` copies `data/pipeline.db` into Turso
 
 ## Layout
 - `run.py` orchestrator · `app.py` Streamlit UI (dark theme in `.streamlit/config.toml`, CSS inline)
 - `mac/desktop.py` native window launcher · `mac/build_app.sh` .app bundle builder · `mac/make_icon.py`
-- `pipeline/db.py` schema + queries · `pipeline/score.py` prompts/parse (Gemini: 1 call/item; Ollama: 7)
+- `pipeline/db.py` schema + queries (local SQLite, or Turso via `pipeline/turso.py` when `TURSO_DATABASE_URL` is set) · `pipeline/score.py` prompts/parse (Gemini: 1 call/item; Ollama: 7)
 - `pipeline/gemini.py` Gemini client: pacing, quota stop, audio transcription
 - `pipeline/ingest_{rss,youtube,podcasts,gmail}.py` · `pipeline/transcribe.py` stage-2 transcription (Gemini or Parakeet)
 - `pipeline/export.py` Obsidian + Anki · `pipeline/tools.py` CLI helpers

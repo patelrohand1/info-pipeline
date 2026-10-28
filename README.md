@@ -88,6 +88,21 @@ Episodes go through two stages so you don't burn time transcribing junk:
 
 Stage 2 needs `brew install ffmpeg`. The first run downloads the Parakeet model (~2.5 GB).
 
+## Cloud (optional, free tiers)
+
+The UI runs on Streamlit Community Cloud, GitHub Actions fetches and scores at 6am/6pm, and both share a
+Turso database (hosted SQLite). The Mac app keeps working and uses the same database.
+
+1. Create a database at [turso.tech](https://turso.tech) (free plan), then put its URL and a token in
+   `.streamlit/secrets.toml` as `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` (next to `GEMINI_API_KEY`).
+2. `python -m pipeline.tools migrate-to-turso` copies your existing local data in, once.
+3. Add the three values as GitHub repo secrets (Settings > Secrets and variables > Actions).
+4. At [share.streamlit.io](https://share.streamlit.io), create an app from this repo with `app.py`,
+   Python 3.12 under Advanced settings, and paste `.streamlit/secrets.toml` into the Secrets box.
+   Keep the app private (Settings > Sharing): anyone with the link could otherwise triage your feed.
+
+Deep reads marked in the cloud get their Obsidian note the next time you open the Mac app.
+
 ## Mac app
 
 ```bash

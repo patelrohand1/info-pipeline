@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 
 from pipeline import db
-from pipeline.config import ROOT, load_config
+from pipeline.config import IS_CLOUD, ROOT, load_config
 from pipeline.export import build_anki_deck, write_obsidian_note
 from pipeline.tools import add_url
 
@@ -16,7 +16,14 @@ st.set_page_config(page_title="Reading Triage", page_icon="📚", layout="wide")
 
 cfg = load_config()
 QUESTIONS = cfg["questions"]
-conn = db.connect(cfg["paths"]["db"])
+
+
+@st.cache_resource
+def get_conn():
+    return db.connect(cfg["paths"]["db"])
+
+
+conn = get_conn()
 CAP = cfg.get("triage", {}).get("deep_read_cap", 4)
 PID_FILE = ROOT / "data" / "run.pid"
 RUN_LOG = ROOT / "logs" / "run.log"
@@ -90,16 +97,30 @@ def pipeline_running() -> bool:
 
 def verdict(item, choice):
     note = None
-    if choice == "deep":
+    if choice == "deep" and not IS_CLOUD:  # the cloud copy can't reach the vault; the Mac app catches up below
         note = str(write_obsidian_note(item, QUESTIONS, cfg["paths"]["obsidian_vault_notes"]))
     db.set_verdict(conn, item["id"], choice, note)
+
+
+# Deep reads marked in the cloud UI have no note yet: write them into the vault the next time the app opens here.
+if not IS_CLOUD and "notes_synced" not in st.session_state:
+    st.session_state.notes_synced = True
+    for it in conn.execute("SELECT * FROM items WHERE status='deep' AND note_path IS NULL").fetchall():
+        try:
+            db.set_verdict(conn, it["id"], "deep", str(write_obsidian_note(it, QUESTIONS, cfg["paths"]["obsidian_vault_notes"])))
+        except OSError:
+            break
 
 
 # ---------- sidebar: run the pipeline from here instead of a terminal
 with st.sidebar:
     st.markdown('<div class="side-h">Pipeline</div>', unsafe_allow_html=True)
-    running = pipeline_running()
-    if running:
+    last = conn.execute("SELECT MAX(fetched_at) FROM items").fetchone()[0]
+    running = False if IS_CLOUD else pipeline_running()
+    if IS_CLOUD:
+        st.caption(f"Fetches at 6am and 6pm automatically. Last new item: {(last or 'never')[:16].replace('T', ' ')} UTC")
+        st.link_button("Run now on GitHub", f"https://github.com/{cfg.get('github_repo', 'patelrohand1/info-pipeline')}/actions/workflows/pipeline.yml", width="stretch")
+    elif running:
         st.info("Fetching and scoring… this can take a while.", icon="⏳")
         if st.button("Refresh", width="stretch"):
             st.rerun()
@@ -109,7 +130,7 @@ with st.sidebar:
         PID_FILE.parent.mkdir(exist_ok=True)
         PID_FILE.write_text(str(proc.pid))
         st.rerun()
-    if RUN_LOG.exists():
+    if RUN_LOG.exists() and not IS_CLOUD:
         tail = RUN_LOG.read_text().splitlines()[-6:]
         st.markdown('<div class="side-h">Last run</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="log">{esc(chr(10).join(tail))}</div>', unsafe_allow_html=True)

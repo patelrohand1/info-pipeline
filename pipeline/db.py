@@ -1,5 +1,10 @@
-"""SQLite storage. One items table, one cards table."""
+"""SQLite storage. One items table, one cards table.
+
+Local file by default; a hosted Turso database when TURSO_DATABASE_URL (and TURSO_AUTH_TOKEN) are set,
+so the Mac app, the scheduled GitHub Actions run, and the cloud UI all share one database.
+"""
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -40,10 +45,14 @@ def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def connect(db_path: Path) -> sqlite3.Connection:
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
+def connect(db_path: Path):
+    if os.environ.get("TURSO_DATABASE_URL"):
+        from .turso import Connection
+        conn = Connection(os.environ["TURSO_DATABASE_URL"], os.environ.get("TURSO_AUTH_TOKEN"))
+    else:
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(db_path, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
     cols = {r[1] for r in conn.execute("PRAGMA table_info(items)")}
     if "media_url" not in cols:  # migrate databases created before podcast support

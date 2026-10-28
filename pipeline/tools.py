@@ -5,10 +5,12 @@
   python -m pipeline.tools gmail-labels        -> lists every Gmail label (incl. Meco's hidden ones)
   python -m pipeline.tools podcast <apple link> -> feed URL for one Apple Podcasts show
   python -m pipeline.tools podcasts-import     -> config lines for every show in your Apple Podcasts library (Mac)
+  python -m pipeline.tools migrate-to-turso    -> one-time copy of data/pipeline.db into Turso (needs TURSO_* secrets)
 """
 import re
 import sys
 from hashlib import sha1
+from pathlib import Path
 
 import requests
 
@@ -67,6 +69,23 @@ def add_url(conn, url: str, name: str = "Manual") -> bool:
     )
 
 
+def migrate_to_turso(db_path: Path) -> None:
+    """One-time copy of the local SQLite file into the Turso database named by TURSO_DATABASE_URL."""
+    import sqlite3
+    local = sqlite3.connect(db_path)
+    remote = db.connect(db_path)  # TURSO_DATABASE_URL is set, so this is Turso; creates the tables
+    if remote.execute("SELECT COUNT(*) FROM items").fetchone()[0]:
+        raise SystemExit("Turso already has items; not copying over them.")
+    for table in ("items", "cards"):
+        cols = [r[1] for r in local.execute(f"PRAGMA table_info({table})")]
+        rows = local.execute(f"SELECT {', '.join(cols)} FROM {table} ORDER BY id").fetchall()
+        sql = f"INSERT INTO {table} ({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})"
+        for i in range(0, len(rows), 25):  # transcripts are long; keep each request small
+            remote.executemany(sql, rows[i:i + 25])
+        n = remote.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        print(f"{table}: {len(rows)} local -> {n} in Turso")
+
+
 if __name__ == "__main__":
     if len(sys.argv) >= 3 and sys.argv[1] == "channel":
         print(resolve_channel(sys.argv[2]))
@@ -81,6 +100,8 @@ if __name__ == "__main__":
     elif len(sys.argv) >= 2 and sys.argv[1] == "podcasts-import":
         for name, feed in apple_library_feeds():
             print(f'    - name: "{(name or "").replace(chr(34), "")}"\n      feed_url: "{feed}"')
+    elif len(sys.argv) >= 2 and sys.argv[1] == "migrate-to-turso":
+        migrate_to_turso(load_config()["paths"]["db"])
     elif len(sys.argv) >= 2 and sys.argv[1] == "gmail-labels":
         from .ingest_gmail import list_labels
         for name, label_id in list_labels():

@@ -1,6 +1,6 @@
 """Thin Gemini API wrapper: JSON generation and audio transcription, paced to stay under free-tier limits.
 
-Key comes from model.api_key in config.yaml, else the GEMINI_API_KEY environment variable.
+Key comes from the GEMINI_API_KEY environment variable (locally: .streamlit/secrets.toml, see config.py).
 """
 import os
 import re
@@ -22,9 +22,9 @@ _last_call = 0.0
 def client(model_cfg: dict) -> genai.Client:
     global _client
     if _client is None:
-        key = model_cfg.get("api_key") or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         if not key:
-            raise QuotaExhausted("no Gemini API key: set model.api_key in config.yaml or GEMINI_API_KEY")
+            raise QuotaExhausted("no Gemini API key: set GEMINI_API_KEY in .streamlit/secrets.toml or the environment")
         _client = genai.Client(api_key=key)
     return _client
 

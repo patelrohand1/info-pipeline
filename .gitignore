@@ -1,6 +1,5 @@
 .venv/
 data/
-config.yaml
 credentials.json
 token.json
 __pycache__/
@@ -8,3 +7,4 @@ logs/
 .DS_Store
 .claude/
 mac/build/
+.streamlit/secrets.toml
