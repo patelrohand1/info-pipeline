@@ -22,7 +22,8 @@ Deep reads become Obsidian notes; flagged concepts become an Anki deck. Goal: re
   (pywebview window around Streamlit; rebuild after moving the folder)
 - Helpers: `python -m pipeline.tools channel @handle | podcast <apple link> | podcasts-import | gmail-labels | add <url>`
 - Schedule: `.github/workflows/pipeline.yml` (GitHub Actions, 6am + 6pm ET, writes to Turso).
-  Local alternative: `scheduling/com.rohan.infopipeline.plist` (launchd)
+  `*.substack.com` feeds 403 from cloud IPs, so the cloud run skips them (`ingest_rss.cloud_blocked`) and the Mac's
+  launchd job (`scheduling/com.rohan.infopipeline.plist`, installed) runs `run.py --substack-only` at 7am/7pm.
 - Cloud UI: Streamlit Community Cloud, `app.py`, Python 3.12, secrets pasted from `.streamlit/secrets.toml`.
   `IS_CLOUD` (config.py) hides local-only bits; Obsidian notes for cloud Deep reads are written when the Mac app opens.
 - One-time: `python -m pipeline.tools migrate-to-turso` copies `data/pipeline.db` into Turso

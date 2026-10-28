@@ -3,17 +3,20 @@
 <plist version="1.0">
 <dict>
     <key>Label</key><string>com.rohan.infopipeline</string>
-    <!-- Replace REPO with the absolute path to this folder -->
+    <!-- Replace REPO with the absolute path to this folder. GitHub Actions does the main 6am/6pm run in the
+         cloud; this Mac job fetches the feeds that block cloud IPs (Substack) an hour later, into the same
+         Turso database. For a Mac-only setup, remove the substack-only argument. -->
     <key>ProgramArguments</key>
     <array>
         <string>REPO/.venv/bin/python</string>
         <string>REPO/run.py</string>
+        <string>--substack-only</string>
     </array>
     <key>WorkingDirectory</key><string>REPO</string>
     <key>StartCalendarInterval</key>
     <array>
-        <dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>0</integer></dict>
-        <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>0</integer></dict>
     </array>
     <key>StandardOutPath</key><string>REPO/logs/launchd.out</string>
     <key>StandardErrorPath</key><string>REPO/logs/launchd.err</string>

@@ -4,6 +4,7 @@ import calendar
 import html as htmllib
 import time
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 import feedparser
 import requests
@@ -20,6 +21,11 @@ def _published(entry) -> tuple[str | None, float | None]:
         return None, None
     ts = calendar.timegm(parsed)
     return datetime.fromtimestamp(ts, timezone.utc).isoformat(timespec="seconds"), ts
+
+
+def cloud_blocked(feed: dict) -> bool:
+    """Feeds that refuse cloud IPs (Substack 403s GitHub Actions). The Mac fetches these: run.py --substack-only."""
+    return feed.get("local_only", False) or (urlparse(feed["url"]).hostname or "").endswith(".substack.com")
 
 
 def _entries(feed: dict) -> list[dict]:
@@ -47,7 +53,10 @@ def _entries(feed: dict) -> list[dict]:
     return out
 
 
-def ingest(conn, feeds: list[dict], lookback_days: int = 7, log=print) -> int:
+def ingest(conn, feeds: list[dict], lookback_days: int = 7, log=print, only: str = "all") -> int:
+    """only: "all", "cloud" (skip cloud_blocked feeds) or "blocked" (just those)."""
+    if only != "all":
+        feeds = [f for f in feeds if cloud_blocked(f) == (only == "blocked")]
     added = 0
     cutoff = time.time() - lookback_days * 86400
     for feed in feeds:

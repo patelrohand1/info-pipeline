@@ -101,6 +101,9 @@ Turso database (hosted SQLite). The Mac app keeps working and uses the same data
    Python 3.12 under Advanced settings, and paste `.streamlit/secrets.toml` into the Secrets box.
    Keep the app private (Settings > Sharing): anyone with the link could otherwise triage your feed.
 
+Substack blocks cloud servers, so the cloud run skips `*.substack.com` feeds (or any feed with `local_only: true`).
+The Mac fetches those at 7am/7pm with `run.py --substack-only` via the launchd job below.
+
 Deep reads marked in the cloud get their Obsidian note the next time you open the Mac app.
 
 ## Mac app
@@ -129,7 +132,7 @@ Extras:
 - `python -m pipeline.tools add <url>`: add an X-linked article or paper from the terminal (or use the "Add a link" tab).
 - `python run.py --limit 20`: cap scoring per run if a backlog is slow (7B models take ~5–20 s per item).
 
-## Run it on a schedule (6am and 6pm)
+## Run it on a schedule (Mac)
 
 ```bash
 REPO="$(pwd)"
