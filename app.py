@@ -14,6 +14,14 @@ from pipeline.tools import add_url
 
 st.set_page_config(page_title="Reading Triage", page_icon="📚", layout="wide")
 
+# Streamlit Cloud only exposes secrets through st.secrets; db.connect reads env vars.
+try:
+    for key, val in st.secrets.items():
+        if isinstance(val, str):
+            os.environ.setdefault(key, val)
+except Exception:  # no secrets configured
+    pass
+
 cfg = load_config()
 QUESTIONS = cfg["questions"]
 
@@ -172,7 +180,8 @@ with tab_digest:
     items = conn.execute(sql + " ORDER BY score DESC, published DESC LIMIT 50", params).fetchall()
 
     if not items:
-        st.info("Nothing above this score. Lower the threshold, or hit **Fetch & score now** in the sidebar.")
+        fetch_hint = "**Run now on GitHub**" if IS_CLOUD else "**Fetch & score now**"
+        st.info(f"Nothing above this score. Lower the threshold, or hit {fetch_hint} in the sidebar.")
     for it in items:
         q_idx = it["question_idx"]
         q_tag = f"Q{q_idx + 1}" if q_idx is not None else "no match"
