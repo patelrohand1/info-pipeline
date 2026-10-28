@@ -1,6 +1,8 @@
-"""Relevance scoring + summaries with a local Ollama model.
+"""Relevance scoring + summaries. model.provider picks the backend:
 
-Two stages per item, so a small model never has to juggle every question at once:
+gemini: one structured call per item returns every question's score plus the summary and cards.
+        Keeps request counts inside the free tier.
+ollama: local model, two stages per item, so a small model never has to juggle every question at once:
   1. One short score-only call per question. The item text comes first in the prompt, so Ollama
      reuses its processed prefix across these calls and they stay cheap.
   2. One full call that writes the summary (and cards, if the item made the cut) for the best question.
@@ -9,6 +11,7 @@ import json
 import re
 
 import requests
+from pydantic import BaseModel
 
 ITEM = """You are triaging reading material for a finance student.
 
@@ -49,6 +52,31 @@ CARDS_WANTED = 'up to 3 flashcards as [{{"front": "...", "back": "..."}}] for co
 CARD_MIN_SCORE = 6
 
 
+GEMINI_PROMPT = ITEM + """
+Score the item from 1 to 10 for how much it helps answer EACH of these questions, independently:
+{questions}
+
+""" + RUBRIC + """
+Most items should score low on most questions.
+
+Also write:
+  summary: exactly 3 short lines: (1) the core claim, (2) the mechanism or evidence behind it,
+           (3) why it matters for markets. No filler.
+  cards: up to 3 flashcards for concepts or numbers worth memorizing (empty if the item is fluff).
+"""
+
+
+class Card(BaseModel):
+    front: str
+    back: str
+
+
+class Triage(BaseModel):
+    scores: list[int]
+    summary: list[str]
+    cards: list[Card]
+
+
 class ScoringError(Exception):
     pass
 
@@ -59,7 +87,7 @@ def _generate(prompt: str, model_cfg: dict, max_tokens: int | None = None) -> st
         options["num_predict"] = max_tokens
     for attempt in range(2):
         resp = requests.post(
-            f"{model_cfg['host'].rstrip('/')}/api/generate",
+            f"{model_cfg.get('host', 'http://localhost:11434').rstrip('/')}/api/generate",
             json={
                 "model": model_cfg["name"],
                 "prompt": prompt,
@@ -97,28 +125,46 @@ def _pick(scores: list[int], catch_all: int | None) -> int:
     return (specific or tied)[0]
 
 
+def _gemini_triage(fields: dict, questions: list[str], model_cfg: dict) -> tuple[list[int], str, list]:
+    from . import gemini
+    numbered = "\n".join(f"  Q{i + 1}: {q}" for i, q in enumerate(questions))
+    data = Triage.model_validate_json(
+        gemini.generate_json(GEMINI_PROMPT.format(questions=numbered, **fields), Triage, model_cfg))
+    if len(data.scores) != len(questions):
+        raise ScoringError(f"expected {len(questions)} scores, got {len(data.scores)}")
+    return data.scores, "\n".join(data.summary), [c.model_dump() for c in data.cards]
+
+
 def score_item(item, questions: list[str], model_cfg: dict, catch_all: int | None = None,
                catch_all_penalty: int = 0) -> dict:
     """catch_all: 0-based index of a broad question that loses ties and has catch_all_penalty taken off its score."""
-    text = (item["text"] or "")[: model_cfg.get("max_chars", 8000)]
+    gem = model_cfg.get("provider") == "gemini"
+    text = (item["text"] or "")[: model_cfg.get("max_chars", 60000 if gem else 8000)]
     fields = dict(source=item["source_name"], title=item["title"], text=text)
 
-    scores = []
-    for question in questions:
-        data = _json(_generate(SCORE_PROMPT.format(question=question, **fields), model_cfg, max_tokens=20))
-        scores.append(max(1, min(10, int(data.get("score", 1)))))
+    if gem:
+        raw, summary, card_list = _gemini_triage(fields, questions, model_cfg)
+        scores = [max(1, min(10, int(s))) for s in raw]
+    else:
+        scores = []
+        for question in questions:
+            data = _json(_generate(SCORE_PROMPT.format(question=question, **fields), model_cfg, max_tokens=20))
+            scores.append(max(1, min(10, int(data.get("score", 1)))))
     if catch_all is not None and catch_all_penalty:
         # The broad question scores most commentary 7+; make it clear a higher bar than the specific ones.
         scores[catch_all] = max(1, scores[catch_all] - catch_all_penalty)
     q = _pick(scores, catch_all)
     score = scores[q]
 
-    cards = CARDS_WANTED if score >= CARD_MIN_SCORE else "[] (the item is below the bar, so no cards)"
-    data = _json(_generate(SUMMARY_PROMPT.format(question=questions[q], score=score, cards=cards, **fields), model_cfg))
-    summary = data.get("summary", "")
-    if isinstance(summary, list):
-        summary = "\n".join(map(str, summary))
-    card_list = (data.get("cards") or []) if score >= CARD_MIN_SCORE else []
+    if not gem:
+        cards = CARDS_WANTED if score >= CARD_MIN_SCORE else "[] (the item is below the bar, so no cards)"
+        data = _json(_generate(SUMMARY_PROMPT.format(question=questions[q], score=score, cards=cards, **fields), model_cfg))
+        summary = data.get("summary", "")
+        if isinstance(summary, list):
+            summary = "\n".join(map(str, summary))
+        card_list = data.get("cards") or []
+    if score < CARD_MIN_SCORE:
+        card_list = []
     if not isinstance(card_list, list):
         card_list = []
     return {
@@ -135,6 +181,7 @@ def score_pending(conn, questions, model_cfg, log=print, limit: int | None = Non
     """catch_all_question: 1-based number of the broad question that loses ties (config: catch_all_question).
     catch_all_penalty: points taken off that question's score before picking (config: catch_all_penalty)."""
     from . import db
+    from .gemini import QuotaExhausted
 
     catch_all = catch_all_question - 1 if catch_all_question else None
     sql = "SELECT * FROM items WHERE status='new' ORDER BY fetched_at"
@@ -149,6 +196,9 @@ def score_pending(conn, questions, model_cfg, log=print, limit: int | None = Non
             done += 1
         except requests.ConnectionError:
             log("[score] can't reach Ollama. Is the app running (or `ollama serve`)? Stopping.")
+            break
+        except QuotaExhausted as exc:
+            log(f"[score] Gemini quota or key problem, stopping; the rest scores next run: {exc}")
             break
         except Exception as exc:
             log(f"[score] item {row['id']} failed: {exc}")

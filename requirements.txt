@@ -11,3 +11,4 @@ streamlit>=1.48
 genanki>=0.13
 parakeet-mlx>=0.5; platform_machine == 'arm64' and sys_platform == 'darwin'
 pywebview>=5; sys_platform == 'darwin'   # native window for the Mac app (mac/)
+google-genai>=1.30           # Gemini API (model.provider: gemini)

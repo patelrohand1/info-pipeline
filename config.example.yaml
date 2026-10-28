@@ -30,7 +30,7 @@ podcasts:
   transcribe: true                  # stage 2: local Parakeet transcription on promising episodes
   transcribe_min_score: 6           # only transcribe if the show notes score at least this
   max_transcriptions_per_run: 3     # each 1-hr episode takes a few minutes on an M-series Mac
-  parakeet_model: "mlx-community/parakeet-tdt-0.6b-v3"   # NVIDIA Parakeet, MLX build
+  parakeet_model: "mlx-community/parakeet-tdt-0.6b-v3"   # NVIDIA Parakeet; only used when model.provider is ollama
   # Fill with: python -m pipeline.tools podcasts-import   (or `podcast <apple link>` per show)
   shows:
     - name: "Example Show"
@@ -50,9 +50,12 @@ gmail:
   label: "Newsletters"
 
 model:
-  name: "qwen2.5:7b"        # any model you've pulled with `ollama pull`
-  host: "http://localhost:11434"
-  max_chars: 8000           # text sent to the model per item
+  provider: "gemini"          # "gemini" (API; also does podcast transcription) or "ollama" (local qwen + Parakeet, $0)
+  name: "gemini-flash-lite-latest"   # alias for Google's newest Flash-Lite; "gemini-flash-latest" is stronger but has a smaller free quota
+  api_key: ""                 # paste your key here (config.yaml is gitignored), or set GEMINI_API_KEY instead
+  requests_per_minute: 8      # stay under the free tier's per-minute cap
+  # max_chars: text sent per item. Defaults to 60000 for gemini, 8000 for ollama.
+  # For ollama, set name: "qwen2.5:7b" and host: "http://localhost:11434".
 
 triage:
   min_score_default: 6      # digest hides items below this

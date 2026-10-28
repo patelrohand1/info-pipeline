@@ -19,7 +19,14 @@ app.py (Streamlit) ◄───────────────────�
 
 ## Setup (macOS, Apple Silicon)
 
-**1. Ollama + a model**
+**1. A model: Gemini (default) or local Ollama**
+
+Gemini: get an API key at [Google AI Studio](https://aistudio.google.com/apikey) and put it in
+`config.yaml` under `model.api_key` (or `export GEMINI_API_KEY=...`). A key from a project **without billing
+enabled** stays on the free tier: when the daily quota runs out, the run stops and the rest is scored next time,
+instead of charging you. Gemini also transcribes podcasts, so you can skip Ollama, ffmpeg and Parakeet.
+
+Local and $0 forever: set `model.provider: ollama` and install Ollama:
 
 ```bash
 brew install ollama          # or download the Ollama app

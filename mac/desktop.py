@@ -15,6 +15,7 @@ from pathlib import Path
 import webview
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 LOG = ROOT / "logs" / "app.log"
 # Finder-launched apps get a bare PATH, so look where Homebrew and the Ollama app put things.
 os.environ["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/Applications/Ollama.app/Contents/Resources:" + os.environ.get("PATH", "")
@@ -70,7 +71,13 @@ def brand_process() -> None:
 
 
 def main() -> None:
-    start_ollama()
+    from pipeline.config import load_config
+    try:
+        local_model = load_config().get("model", {}).get("provider", "ollama") != "gemini"
+    except Exception:
+        local_model = True
+    if local_model:
+        start_ollama()
     port = free_port()
     LOG.parent.mkdir(exist_ok=True)
     server = subprocess.Popen(

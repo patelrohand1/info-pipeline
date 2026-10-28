@@ -65,7 +65,7 @@ def main() -> None:
         # Episodes whose show notes scored well get transcribed, then re-scored on the full text.
         if pods.get("transcribe", True):
             from pipeline.transcribe import transcribe_promising
-            if transcribe_promising(conn, pods, log):
+            if transcribe_promising(conn, pods, log, cfg["model"]):
                 score_pending(conn, cfg["questions"], cfg["model"], log,
                               catch_all_question=cfg.get("catch_all_question"), catch_all_penalty=cfg.get("catch_all_penalty", 0))
 
